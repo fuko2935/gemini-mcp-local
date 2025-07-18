@@ -1655,58 +1655,10 @@ const ApiKeyStatusSchema = z.object({
 
 // Gemini Codebase Analyzer Schema
 const GeminiCodebaseAnalyzerSchema = z.object({
-  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. The analysis will run on the project directory you started the server from."),
-  temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
-  analysisMode: z.enum(["general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", "infrastructure", "compliance", "opensource", "freelancer", "education", "research"]).optional().describe(`🎯 ANALYSIS MODE (choose the expert that best fits your needs):
-
-📋 GENERAL MODES:
-• general (default) - Balanced analysis for any question
-• explanation - Educational explanations for learning
-• onboarding - New developer guidance and getting started
-• review - Code review and quality assessment
-• audit - Comprehensive codebase examination
-
-🔧 DEVELOPMENT MODES:
-• implementation - Building new features step-by-step
-• refactoring - Code improvement and restructuring
-• debugging - Bug hunting and troubleshooting
-• testing - Test strategy and quality assurance
-• documentation - Technical writing and API docs
-• migration - Legacy modernization and upgrades
-
-🎨 SPECIALIZATION MODES:
-• frontend - React/Vue/Angular, modern web UI/UX
-• backend - Node.js/Python, APIs, microservices
-• mobile - React Native/Flutter, native apps
-• database - SQL/NoSQL, optimization, schema design
-• devops - CI/CD, infrastructure, deployment
-• security - Vulnerability assessment, secure coding
-
-🚀 ADVANCED MODES:
-• api - API design and developer experience
-• apex - Production-ready implementation (zero defects)
-• gamedev - JavaScript game development optimization
-• aiml - Machine learning, AI systems, MLOps
-• startup - MVP development, rapid prototyping
-• enterprise - Large-scale systems, corporate integration
-• blockchain - Web3, smart contracts, DeFi
-• embedded - IoT, hardware programming, edge computing
-
-🏗️ ARCHITECTURE & INFRASTRUCTURE:
-• architecture - System design, patterns, scalability
-• cloud - AWS/GCP/Azure, serverless, cloud-native
-• data - Data pipelines, ETL, analytics, data engineering
-• monitoring - Observability, alerts, SLA/SLO, incident response
-• infrastructure - IaC, Kubernetes, platform engineering
-
-🏢 BUSINESS & GOVERNANCE:
-• compliance - GDPR, SOX, HIPAA, regulatory frameworks
-• opensource - Community building, licensing, maintainer guidance
-• freelancer - Client management, contracts, business practices
-• education - Curriculum design, tutorials, learning content
-• research - Innovation, prototyping, academic collaboration
-
-💡 TIP: Choose the mode that matches your role or question type for the most relevant expert analysis!`),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to analyze inside the mounted project. Use '.' for the root of the mounted directory."),
+  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase."),
+  temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: Files or folders to exclude from this analysis, using glob patterns."),
+  analysisMode: z.enum(["general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", "infrastructure", "compliance", "opensource", "freelancer", "education", "research"]).optional().describe(`🎯 ANALYSIS MODE: Choose an expert persona for the analysis. Default is 'general'.`),
   ...generateApiKeyFields()
 });
 
@@ -2750,8 +2702,9 @@ ${analysis}
       try {
         const params = GeminiCodebaseAnalyzerSchema.parse(request.params.arguments);
         
-        // Use fixed workspace directory
-        const normalizedPath = "/workspace";
+        // Gelen proje yolunu, container içindeki ana çalışma alanıyla birleştir.
+        const projectPath = path.join('/workspace', params.projectPath);
+        const normalizedPath = projectPath;
         
         // Resolve API keys from multiple sources
         const apiKeys = resolveApiKeys(params);

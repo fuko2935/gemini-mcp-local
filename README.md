@@ -56,11 +56,11 @@ You can also **see my [GitHub profile](https://github.com/cyanheads/)** for addi
 
 ## Quick Start
 
-This project is a portable MCP server designed to be run via Smithery AI to analyze your local project files.
+This project is a powerful MCP server designed to be run via Smithery AI, allowing it to securely analyze your local project files.
 
 ### 1. Initial Setup (One-time only)
 
-First, clone the repository, install dependencies, and build the project.
+First, clone this repository, install its dependencies, and build the project.
 
 ```bash
 git clone https://github.com/cyanheads/mcp-ts-template.git
@@ -71,7 +71,7 @@ npm run build
 
 ### 2. Publish to Smithery
 
-Publish your server to the Smithery platform so it becomes available in your toolkit.
+Publish your server to the Smithery platform. This makes it available in your toolkit and creates the necessary Docker image.
 
 ```bash
 smithery push
@@ -79,17 +79,17 @@ smithery push
 
 ### 3. How to Use
 
-Now, you can run the server from **any project directory** you want to analyze.
+Now, you can run the server to analyze **any project directory** on your machine.
 
-1.  **Open your terminal and navigate to the project you want to analyze:**
-    ```bash
-    cd /path/to/your/other-project
-    ```
+1.  **Open the Smithery AI web dashboard.**
+2.  Find your `gemini-mcp-server` and click **Start**.
+3.  A configuration window will appear. You will see a field labeled **"IMPORTANT: The absolute path on your local machine to the project you want to analyze"**.
+4.  In this field, enter the **full, absolute path** to the project you want to analyze.
+    -   **Windows Example:** `C:\Users\YourName\Desktop\MyProject`
+    -   **macOS/Linux Example:** `/Users/YourName/Documents/MyProject`
+5.  Fill in your Gemini API key and click **Start**.
 
-2.  **Start the server via Smithery:**
-    Go to your Smithery AI dashboard, find your `gemini-mcp-server`, and click **Start**.
-
-Smithery will now start a container on your local machine, but it will **mount your current directory (`/path/to/your/other-project`)** into the container. When you use the `gemini_codebase_analyzer` tool, it will analyze the files from that specific project.
+Smithery will now start the server in a container but will **mount your specified local directory** into the container at the `/workspace` path. When you use the `gemini_codebase_analyzer` tool via an AI agent, it will correctly analyze the files from the project you specified.
 
 ## ⚙️ Configuration
 
