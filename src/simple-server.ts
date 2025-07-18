@@ -1312,37 +1312,38 @@ Execute flawlessly with JavaScript game development excellence.`,
 
 // Cross-platform path normalization with security validation
 function normalizeProjectPath(projectPath: string): string {
-  let normalizedPath = projectPath;
-  
-  // Convert Windows paths to WSL/Unix format
-  if (projectPath.match(/^[A-Za-z]:\\/)) {
-    const drive = projectPath.charAt(0).toLowerCase();
-    const pathWithoutDrive = projectPath.slice(3).replace(/\\/g, '/');
+  // ADIM 1: Gelen yolu, komutun çalıştığı dizine göre mutlak bir yola dönüştür.
+  // Bu, '.' gibi göreceli yolların doğru çözümlenmesini sağlar.
+  const absolutePath = path.resolve(projectPath);
+
+  let normalizedPath = absolutePath;
+
+  // ADIM 2: Windows ve WSL yollarını Unix formatına çevir.
+  if (process.platform === 'win32' && /^[a-zA-Z]:\\/.test(normalizedPath)) {
+    const drive = normalizedPath.charAt(0).toLowerCase();
+    const pathWithoutDrive = normalizedPath.slice(3).replace(/\\/g, '/');
     normalizedPath = `/mnt/${drive}/${pathWithoutDrive}`;
+  } else if (normalizedPath.startsWith('\\\\')) {
+    normalizedPath = normalizedPath.replace(/\\/g, '/').substring(1);
   }
-  // Handle UNC paths \\server\share -> /server/share  
-  else if (projectPath.startsWith('\\\\')) {
-    normalizedPath = projectPath.replace(/\\/g, '/').substring(1);
-  }
-  
-  // Security validation: Check against dangerous paths
-  const isDangerous = DANGEROUS_PATHS.some(dangerousPath => 
+
+  // ADIM 3: Güvenlik kontrollerini yap.
+  const isDangerous = DANGEROUS_PATHS.some(dangerousPath =>
     normalizedPath.toLowerCase().startsWith(dangerousPath.toLowerCase())
   );
-  
+
   if (isDangerous) {
     throw new Error(`Access denied: Path '${projectPath}' is restricted for security reasons. Please use workspace/project directories only.`);
   }
   
-  // Check if path matches allowed patterns (for public deployment)
-  const isAllowed = ALLOWED_PATH_PATTERNS.some(pattern => 
-    pattern.test(normalizedPath) || pattern.test(projectPath)
+  const isAllowed = ALLOWED_PATH_PATTERNS.some(pattern =>
+    pattern.test(normalizedPath)
   );
-  
+
   if (!isAllowed) {
-    throw new Error(`Access denied: Path '${projectPath}' is not in an allowed workspace directory. Please use paths like 'C:\\Users\\YourName\\Projects' or '/home/user/Projects'.`);
+    throw new Error(`Access denied: Path '${projectPath}' (resolved to '${normalizedPath}') is not in an allowed workspace directory. Please use paths like 'C:\\Users\\YourName\\Projects' or '/home/user/Projects'.`);
   }
-  
+
   return normalizedPath;
 }
 
@@ -1654,7 +1655,7 @@ const ApiKeyStatusSchema = z.object({
 
 // Gemini Codebase Analyzer Schema
 const GeminiCodebaseAnalyzerSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. 🌍 TIP: Use English for best AI performance! Examples: 'How does authentication work?', 'Find all API endpoints', 'Explain the database schema', 'What are the main components?', 'How to deploy this?', 'Find security vulnerabilities'. 💡 NEW USER? Use 'get_usage_guide' tool first to learn all capabilities!"),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   analysisMode: z.enum(["general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", "infrastructure", "compliance", "opensource", "freelancer", "education", "research"]).optional().describe(`🎯 ANALYSIS MODE (choose the expert that best fits your needs):
@@ -1712,7 +1713,7 @@ const GeminiCodebaseAnalyzerSchema = z.object({
 
 // Gemini Code Search Schema - for targeted, fast searches
 const GeminiCodeSearchSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   searchQuery: z.string().min(1).max(500).describe(`🔍 SEARCH QUERY: What specific code pattern, function, or feature to find. 🌍 TIP: Use English for best AI performance! 💡 NEW USER? Use 'get_usage_guide' with 'search-tips' topic first! Examples:
 • 'authentication logic' - Find login/auth code
@@ -1745,7 +1746,7 @@ const UsageGuideSchema = z.object({
 
 // Dynamic Expert Mode Step 1: Create Custom Expert Schema
 const DynamicExpertCreateSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   expertiseHint: z.string().min(1).max(200).optional().describe("🎯 EXPERTISE HINT (optional): Suggest what kind of expert you need. Examples: 'React performance expert', 'Database architect', 'Security auditor', 'DevOps specialist'. Leave empty for automatic expert selection based on your project."),
   ...generateApiKeyFields()
@@ -1753,7 +1754,7 @@ const DynamicExpertCreateSchema = z.object({
 
 // Dynamic Expert Mode Step 2: Analyze with Custom Expert Schema
 const DynamicExpertAnalyzeSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. 🌍 TIP: Use English for best AI performance! This will be analyzed using the custom expert mode created in step 1."),
   expertPrompt: z.string().min(1).max(10000).describe("🎯 EXPERT PROMPT: The custom expert system prompt generated by 'gemini_dynamic_expert_create' tool. Copy the entire expert prompt from the previous step."),
@@ -1767,7 +1768,7 @@ const ReadLogFileSchema = z.object({
 
 // Project Orchestrator Step 1: Create Groups and Analysis Plan Schema
 const ProjectOrchestratorCreateSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   analysisMode: z.enum(['general', 'implementation', 'refactoring', 'explanation', 'debugging', 'audit', 'security', 'performance', 'testing', 'documentation', 'migration', 'review', 'onboarding', 'api', 'apex', 'gamedev', 'aiml', 'devops', 'mobile', 'frontend', 'backend', 'database', 'startup', 'enterprise', 'blockchain', 'embedded', 'architecture', 'cloud', 'data', 'monitoring', 'infrastructure', 'compliance', 'opensource', 'freelancer', 'education', 'research']).default('general').describe("🎯 ANALYSIS MODE: Choose the expert that best fits your needs. The orchestrator will use this mode for all file groups to ensure consistent analysis across the entire project."),
   maxTokensPerGroup: z.number().min(100000).max(950000).default(900000).optional().describe("🔢 MAX TOKENS PER GROUP: Maximum tokens per file group (default: 900K, max: 950K). Lower values create smaller groups for more detailed analysis. Higher values allow larger chunks but may hit API limits."),
@@ -1776,7 +1777,7 @@ const ProjectOrchestratorCreateSchema = z.object({
 
 // Project Orchestrator Step 2: Analyze with Groups Schema
 const ProjectOrchestratorAnalyzeSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: Use '.' for current directory (recommended), or full path to your project. Examples: '.' (current dir), '/home/user/MyProject', 'C:\\Users\\Name\\Projects\\MyApp'. Only workspace/project directories allowed for security."),
+  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. 🌍 TIP: Use English for best AI performance! This will be analyzed using the file groups created in step 1."),
   analysisMode: z.enum(['general', 'implementation', 'refactoring', 'explanation', 'debugging', 'audit', 'security', 'performance', 'testing', 'documentation', 'migration', 'review', 'onboarding', 'api', 'apex', 'gamedev', 'aiml', 'devops', 'mobile', 'frontend', 'backend', 'database', 'startup', 'enterprise', 'blockchain', 'embedded', 'architecture', 'cloud', 'data', 'monitoring', 'infrastructure', 'compliance', 'opensource', 'freelancer', 'education', 'research']).default('general').describe("🎯 ANALYSIS MODE: Choose the expert that best fits your needs. Must match the mode used in step 1."),

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2025-07-18
+
+### Fixed
+- **Critical Path Resolution Bug**: Fixed a major bug in `normalizeProjectPath` where relative paths (like '.') were resolved from the script's location instead of the user's current working directory. Path resolution is now correctly anchored to `process.cwd()`, allowing the server to analyze any user-specified local project directory as intended.
+
+### Changed
+- **Schema Descriptions**: Updated all Zod schemas containing a `projectPath` field with clearer descriptions to inform the AI that paths are resolved relative to the server's launch directory.
+- **Documentation**: Updated `README.md` and `.clinerules` to reflect the local execution model and correct path resolution behavior.
+- **Project Tree**: Regenerated `docs/tree.md` to ensure it reflects the current project structure.
+
 ## [1.6.3] - 2025-07-07
 
 ### Added
