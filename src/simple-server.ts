@@ -15,7 +15,7 @@ import { glob } from "glob";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import winston from "winston";
-import { logger, RequestContext, requestContextService } from "./utils/index.js";
+import { RequestContext, requestContextService } from "./utils/index.js";
 
 // Initialize logging system
 const logsDir = path.join(process.cwd(), 'logs');
