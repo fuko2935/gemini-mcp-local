@@ -1655,10 +1655,14 @@ const ApiKeyStatusSchema = z.object({
 
 // Gemini Codebase Analyzer Schema
 const GeminiCodebaseAnalyzerSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to analyze inside the mounted project. Use '.' for the root of the mounted directory."),
-  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase."),
-  temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: Files or folders to exclude from this analysis, using glob patterns."),
-  analysisMode: z.enum(["general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", "infrastructure", "compliance", "opensource", "freelancer", "education", "research"]).optional().describe(`🎯 ANALYSIS MODE: Choose an expert persona for the analysis. Default is 'general'.`),
+  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. The analysis will run on the project directory you provided when starting the server."),
+  temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: Files or folders to exclude from this analysis, using glob patterns like 'dist/**', '*.log'."),
+  analysisMode: z.enum([
+      "general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", 
+      "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", 
+      "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", 
+      "infrastructure", "compliance", "opensource", "freelancer", "education", "research"
+    ]).optional().describe(`🎯 ANALYSIS MODE: Choose an expert persona for the analysis. Default is 'general'.`),
   ...generateApiKeyFields()
 });
 
@@ -1719,7 +1723,6 @@ const ReadLogFileSchema = z.object({
 
 // Project Orchestrator Step 1: Create Groups and Analysis Plan Schema
 const ProjectOrchestratorCreateSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   analysisMode: z.enum(['general', 'implementation', 'refactoring', 'explanation', 'debugging', 'audit', 'security', 'performance', 'testing', 'documentation', 'migration', 'review', 'onboarding', 'api', 'apex', 'gamedev', 'aiml', 'devops', 'mobile', 'frontend', 'backend', 'database', 'startup', 'enterprise', 'blockchain', 'embedded', 'architecture', 'cloud', 'data', 'monitoring', 'infrastructure', 'compliance', 'opensource', 'freelancer', 'education', 'research']).default('general').describe("🎯 ANALYSIS MODE: Choose the expert that best fits your needs. The orchestrator will use this mode for all file groups to ensure consistent analysis across the entire project."),
   maxTokensPerGroup: z.number().min(100000).max(950000).default(900000).optional().describe("🔢 MAX TOKENS PER GROUP: Maximum tokens per file group (default: 900K, max: 950K). Lower values create smaller groups for more detailed analysis. Higher values allow larger chunks but may hit API limits."),
@@ -2423,7 +2426,7 @@ ${totalKeys === 0 ? `
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }
@@ -2582,7 +2585,7 @@ This custom expert is now ready to provide highly specialized analysis tailored 
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }
@@ -2702,8 +2705,13 @@ ${analysis}
       try {
         const params = GeminiCodebaseAnalyzerSchema.parse(request.params.arguments);
         
-        // Gelen proje yolunu, container içindeki ana çalışma alanıyla birleştir.
-        const projectPath = path.join('/workspace', params.projectPath);
+        const projectPath = "/workspace"; // Analiz edilecek yol artık sabit ve güvenilir.
+        const toolContext: RequestContext = requestContextService.createRequestContext({
+            operation: "GeminiCodebaseAnalysis",
+            projectPath: projectPath,
+            questionLength: params.question.length,
+        });
+
         const normalizedPath = projectPath;
         
         // Resolve API keys from multiple sources
@@ -2885,7 +2893,7 @@ ${troubleshootingTips.join('\n')}
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }
@@ -3143,8 +3151,13 @@ ${logContent}
       try {
         const params = ProjectOrchestratorCreateSchema.parse(request.params.arguments);
         
-        // Normalize Windows paths to WSL/Linux format  
-        const normalizedPath = normalizeProjectPath(params.projectPath);
+        const projectPath = "/workspace"; // Analiz edilecek yol artık sabit ve güvenilir.
+        const toolContext: RequestContext = requestContextService.createRequestContext({
+            operation: "ProjectOrchestratorCreate",
+            projectPath: projectPath,
+        });
+
+        const normalizedPath = projectPath;
         
         // Resolve API keys from multiple sources
         const apiKeys = resolveApiKeys(params);
@@ -3159,7 +3172,7 @@ ${logContent}
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }
@@ -3351,7 +3364,7 @@ ${groupsData}
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }
