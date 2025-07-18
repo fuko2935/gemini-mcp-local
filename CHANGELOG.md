@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2025-07-18
+
+### Fixed
+- **Build Failure**: Resolved a critical `tsc` build failure (TS2304) in `simple-server.ts` by adding missing imports for `RequestContext` and `requestContextService`.
+- **Tool Inconsistency**: Refactored the `project_orchestrator_create` tool to remove the redundant `projectPath` parameter. It now consistently analyzes the mounted `/workspace` directory, aligning its behavior with `gemini_codebase_analyzer` and simplifying the AI's interaction model.
+
 ## [1.0.1] - 2025-07-18
 
 ### Fixed
