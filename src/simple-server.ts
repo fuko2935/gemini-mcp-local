@@ -1655,8 +1655,7 @@ const ApiKeyStatusSchema = z.object({
 
 // Gemini Codebase Analyzer Schema
 const GeminiCodebaseAnalyzerSchema = z.object({
-  projectPath: z.string().min(1).describe("📁 PROJECT PATH: The path to your project. Use '.' for the directory where the server was launched. Relative paths are resolved from the server's current working directory. For security, only workspace/project directories are allowed."),
-  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. 🌍 TIP: Use English for best AI performance! Examples: 'How does authentication work?', 'Find all API endpoints', 'Explain the database schema', 'What are the main components?', 'How to deploy this?', 'Find security vulnerabilities'. 💡 NEW USER? Use 'get_usage_guide' tool first to learn all capabilities!"),
+  question: z.string().min(1).max(2000).describe("❓ YOUR QUESTION: Ask anything about the codebase. The analysis will run on the project directory you started the server from."),
   temporaryIgnore: z.array(z.string()).optional().describe("🚫 TEMPORARY IGNORE: One-time file exclusions (in addition to .gitignore). Use glob patterns like 'dist/**', '*.log', 'node_modules/**', 'temp-file.js'. This won't modify .gitignore, just exclude files for this analysis only. Examples: ['build/**', 'src/legacy/**', '*.test.js']"),
   analysisMode: z.enum(["general", "implementation", "refactoring", "explanation", "debugging", "audit", "security", "performance", "testing", "documentation", "migration", "review", "onboarding", "api", "apex", "gamedev", "aiml", "devops", "mobile", "frontend", "backend", "database", "startup", "enterprise", "blockchain", "embedded", "architecture", "cloud", "data", "monitoring", "infrastructure", "compliance", "opensource", "freelancer", "education", "research"]).optional().describe(`🎯 ANALYSIS MODE (choose the expert that best fits your needs):
 
@@ -2751,8 +2750,8 @@ ${analysis}
       try {
         const params = GeminiCodebaseAnalyzerSchema.parse(request.params.arguments);
         
-        // Normalize Windows paths to WSL/Linux format  
-        const normalizedPath = normalizeProjectPath(params.projectPath);
+        // Use fixed workspace directory
+        const normalizedPath = "/workspace";
         
         // Resolve API keys from multiple sources
         const apiKeys = resolveApiKeys(params);
@@ -2767,7 +2766,7 @@ ${analysis}
           stats = await fs.stat(normalizedPath);
         } catch (error: any) {
           if (error.code === 'ENOENT') {
-            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}' (original: '${params.projectPath}')`);
+            throw new Error(`ENOENT: no such file or directory, stat '${normalizedPath}'`);
           }
           throw new Error(`Failed to access project path: ${error.message}`);
         }

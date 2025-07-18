@@ -7,9 +7,6 @@
   "files": [
     "dist"
   ],
-  "bin": {
-    "gemini-mcp-server": "dist/simple-server.js"
-  },
   "exports": "./dist/simple-server.js",
   "types": "dist/simple-server.d.ts",
   "type": "module",
@@ -22,7 +19,7 @@
   },
   "homepage": "https://github.com/cyanheads/mcp-ts-template#readme",
   "scripts": {
-    "build": "tsc && chmod +x dist/simple-server.js",
+    "build": "tsc",
     "start": "node dist/simple-server.js",
     "start:stdio": "node dist/simple-server.js",
     "start:http": "node dist/simple-server.js",

@@ -10,17 +10,42 @@ startCommand:
         description: "Your Gemini API keys from Google AI Studio. You can enter multiple keys separated by commas for automatic rotation (e.g., 'key1,key2,key3'). Get yours at: https://makersuite.google.com/app/apikey"
       logsPath:
         type: string
-        description: "The absolute path for log files on your local machine. Default: ./logs"
+        description: "The absolute path for log files. Default: ./logs"
         default: "./logs"
   exampleConfig:
-    geminiApiKeys: "your-api-key-here,your-second-key,your-third-key"
+    geminiApiKeys: "your-api-key-here"
   commandFunction: |-
-    (config) => ({
-      command: 'npm',
-      args: ['run', 'start:stdio'],
-      env: {
-        GEMINI_API_KEY: config.geminiApiKeys,
-        LOGS_DIR: config.logsPath || './logs',
-        MCP_LOG_LEVEL: 'debug'
-      }
-    })
+    (config) => {
+      // Bu komut, kullanıcının yerel makinesindeki Smithery Daemon tarafından çalıştırılır.
+      // process.cwd(), kullanıcının 'smithery start' komutunu çalıştırdığı yerel dizini verir.
+      const userProjectDirectory = process.cwd();
+
+      return {
+        // 'docker' komutunu doğrudan çalıştırarak tam kontrol sağlıyoruz.
+        command: 'docker',
+        args: [
+          'run',
+          '--rm', // Container durduğunda otomatik olarak sil.
+          '-i', // Sunucunun stdin'ini açık tut (MCP için gerekli).
+          // Bu en önemli satır: Kullanıcının yerel dizinini container içine bağlıyoruz.
+          // -v <yerel_dizin>:<container_içi_dizin>
+          '-v',
+          `${userProjectDirectory}:/workspace`,
+          // Bu da önemli: Container'ın çalışma dizinini bağladığımız klasör olarak ayarla.
+          '-w',
+          '/workspace',
+          // Ortam değişkenlerini container'a geçiriyoruz.
+          '-e',
+          `GEMINI_API_KEY=${config.geminiApiKeys}`,
+          '-e',
+          `LOGS_DIR=${config.logsPath || '/app/logs'}`, // Logları container içinde tutabiliriz.
+          '-e',
+          `MCP_LOG_LEVEL=debug`,
+          // Smithery'nin bu proje için oluşturduğu Docker imajının adını kullan.
+          `smithery-build-${config.packageName}`,
+          // Container başladığında çalıştırılacak komut.
+          'node',
+          'dist/simple-server.js'
+        ]
+      };
+    }

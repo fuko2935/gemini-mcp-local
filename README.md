@@ -56,48 +56,40 @@ You can also **see my [GitHub profile](https://github.com/cyanheads/)** for addi
 
 ## Quick Start
 
-### 1. Installation
+This project is a portable MCP server designed to be run via Smithery AI to analyze your local project files.
 
-Clone the repository and install dependencies:
+### 1. Initial Setup (One-time only)
+
+First, clone the repository, install dependencies, and build the project.
 
 ```bash
 git clone https://github.com/cyanheads/mcp-ts-template.git
 cd mcp-ts-template
 npm install
-```
-
-### 2. Build the Project
-
-```bash
 npm run build
-# Or use 'npm run rebuild' for a clean install
 ```
 
-### 3. Running the Components
+### 2. Publish to Smithery
 
-#### Running the MCP Server
-
-You can run the included MCP server to make its tools available.
-
-- **Via Stdio (Default):**
-  ```bash
-  npm run start:server
-  ```
-- **Via Streamable HTTP:**
-  ```bash
-  npm run start:server:http
-  ```
-
-#### Running the Agent
-
-The agent can be run from the command line to perform tasks. It will automatically connect to the servers defined in `src/mcp-client/client-config/mcp-config.json`. If running the agent, you must have the MCP config set up correctly and your openrouter API key configured in .env.
+Publish your server to the Smithery platform so it becomes available in your toolkit.
 
 ```bash
-npm run start:agent "Your prompt here"
-
-# Example:
-npm run start:agent "Use the echo tool to say hello world and then get a cat fact."
+smithery push
 ```
+
+### 3. How to Use
+
+Now, you can run the server from **any project directory** you want to analyze.
+
+1.  **Open your terminal and navigate to the project you want to analyze:**
+    ```bash
+    cd /path/to/your/other-project
+    ```
+
+2.  **Start the server via Smithery:**
+    Go to your Smithery AI dashboard, find your `gemini-mcp-server`, and click **Start**.
+
+Smithery will now start a container on your local machine, but it will **mount your current directory (`/path/to/your/other-project`)** into the container. When you use the `gemini_codebase_analyzer` tool, it will analyze the files from that specific project.
 
 ## ⚙️ Configuration
 
